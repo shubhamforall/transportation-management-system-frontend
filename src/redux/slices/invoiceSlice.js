@@ -76,22 +76,37 @@ const invoiceSlice = createSlice({
       })
       .addCase(fetchInvoices.fulfilled, (state, action) => {
         state.loading = false;
-        state.invoices = action.payload;
+        const invoiceList = action.payload?.data?.list || [];
+        state.invoices = invoiceList;
 
-        // Calculate paid and unpaid counts
-        state.paidCount = action.payload.filter((inv) => inv.status === "Paid").length;
-        state.unpaidCount = action.payload.filter((inv) => inv.status === "Unpaid").length;
+        // Calculate PAID and PENDING counts
+        state.paidCount = invoiceList.filter(
+          (inv) => inv.status === "PAID"
+        ).length;
+        state.unpaidCount = invoiceList.filter(
+          (inv) => inv.status === "PENDING"
+        ).length;
 
-        // Calculate total paid and unpaid amounts safely
-        state.totalPaid = action.payload
-        .filter((inv) => inv.status === "Paid" && typeof inv.total === "number" && !isNaN(inv.total))
-        .reduce((acc, inv) => acc + inv.total, 0);
-      
-      state.totalUnpaid = action.payload
-        .filter((inv) => inv.status === "Unpaid" && typeof inv.total === "number" && !isNaN(inv.total))
-        .reduce((acc, inv) => acc + inv.total, 0);
-      
+        // Calculate total PAID and PENDING amounts
+        state.totalPaid = invoiceList
+          .filter(
+            (inv) =>
+              inv.status === "PAID" &&
+              typeof inv.total === "number" &&
+              !isNaN(inv.total)
+          )
+          .reduce((acc, inv) => acc + inv.total, 0);
+
+        state.totalUnpaid = invoiceList
+          .filter(
+            (inv) =>
+              inv.status === "PENDING" &&
+              typeof inv.total === "number" &&
+              !isNaN(inv.total)
+          )
+          .reduce((acc, inv) => acc + inv.total, 0);
       })
+
       .addCase(fetchInvoices.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -105,10 +120,10 @@ const invoiceSlice = createSlice({
         state.loading = false;
         state.successMessage = action.payload.message;
         state.invoices.push(action.payload.invoice);
-        
+
         const invoiceAmount = Number(action.payload.invoice.amount) || 0;
-        
-        if (action.payload.invoice.status === "Paid") {
+
+        if (action.payload.invoice.status === "PAID") {
           state.paidCount += 1;
           state.totalPaid += invoiceAmount;
         } else {
@@ -132,21 +147,21 @@ const invoiceSlice = createSlice({
         if (index !== -1) {
           const prevStatus = state.invoices[index].status;
           state.invoices[index] = updated;
-          
+
           const invoiceAmount = Number(updated.amount) || 0;
-          
-          if (prevStatus === "Paid") {
+
+          if (prevStatus === "PAID") {
             state.paidCount -= 1;
             state.totalPaid -= invoiceAmount;
-          } else if (prevStatus === "Unpaid") {
+          } else if (prevStatus === "PENDING") {
             state.unpaidCount -= 1;
             state.totalUnpaid -= invoiceAmount;
           }
-          
-          if (updated.status === "Paid") {
+
+          if (updated.status === "PAID") {
             state.paidCount += 1;
             state.totalPaid += invoiceAmount;
-          } else if (updated.status === "Unpaid") {
+          } else if (updated.status === "PENDING") {
             state.unpaidCount += 1;
             state.totalUnpaid += invoiceAmount;
           }

@@ -25,6 +25,9 @@ export default {
         error: "#ef4444", 
         warning: "#f97316", 
         info: "#3b82f6", 
+
+        // Table colors
+        tableHeader: "#6c718a",
       },
     },
   },

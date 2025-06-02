@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { addCustomer } from "../../redux/slices/customerSlice";
 import { useNavigate } from "react-router-dom";
+import { addCustomer } from "../../redux/slices/customerSlice";
 import Sidebar from "../common/Sidebar";
 import Header from "../common/Header";
 
@@ -10,9 +10,10 @@ const CustomerForm = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    mobileNo: "",
+    // customer_type: "",
+    first_name: "",
+    last_name: "",
+    mobile_number: "",
     email: "",
     address: "",
   });
@@ -20,43 +21,63 @@ const CustomerForm = () => {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
 
+  const [topErrors, setTopErrors] = useState([]);
+
   const validateForm = () => {
-    let newErrors = {};
+    const newErrors = {};
+    const errorMessages = [];
 
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    // if (!formData.customer_type.trim()) {
+    //   newErrors.customer_type = "Customer type is required";
+    //   errorMessages.push("Please select the customer type.");
+    // }
 
-    if (!formData.mobileNo.trim()) {
-      newErrors.mobileNo = "Mobile number is required";
-    } else if (!formData.mobileNo.match(/^[0-9]{10}$/)) {
-      newErrors.mobileNo = "Mobile number must be 10 digits";
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = "First name is required";
+      errorMessages.push("Please enter the first name.");
+    }
+
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = "Last name is required";
+      errorMessages.push("Please enter the last name.");
+    }
+
+    if (!formData.mobile_number.trim()) {
+      newErrors.mobile_number = "Mobile number is required";
+      errorMessages.push("Please enter the mobile number.");
+    } else if (!/^[0-9]{10}$/.test(formData.mobile_number)) {
+      newErrors.mobile_number = "Mobile number must be 10 digits";
+      errorMessages.push("Mobile number must be exactly 10 digits.");
     }
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errorMessages.push("Please enter the email.");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Enter a valid email address";
+      errorMessages.push("Please enter a valid email address.");
     }
 
-    if (!formData.address.trim()) newErrors.address = "Address is required";
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required";
+      errorMessages.push("Please enter the address.");
+    }
 
     setErrors(newErrors);
+    setTopErrors(errorMessages);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-
-    // Clear specific error when user starts typing
-    setErrors((prevErrors) => {
-      const newErrors = { ...prevErrors };
-      delete newErrors[name];
-      return newErrors;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[name];
+      return updated;
     });
-
-    // Clear general backend error when user starts typing
     setGeneralError("");
+    setTopErrors([]);
   };
 
   const handleSubmit = async (e) => {
@@ -64,134 +85,167 @@ const CustomerForm = () => {
     if (!validateForm()) return;
 
     try {
-      await dispatch(addCustomer(formData)).unwrap(); 
+      await dispatch(addCustomer(formData)).unwrap();
       navigate("/customers");
     } catch (error) {
-      console.error("Error adding customer:", error);
-
       let newErrors = {};
-      if (error.error && error.error.errors && Array.isArray(error.error.errors)) {
+      if (error.error?.errors?.length) {
+        const collectedMessages = [];
         error.error.errors.forEach((err) => {
           if (err.path) {
-            newErrors[err.path] = err.message.replace(/^./, (char) => char.toUpperCase());
+            newErrors[err.path] = err.message;
+            collectedMessages.push(err.message);
           }
         });
+        setTopErrors(collectedMessages);
+      } else if (error.message) {
+        setGeneralError(error.message);
       }
-       else if (error.message) {
-        setGeneralError(error.message); 
-      }
-
       setErrors(newErrors);
     }
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex bg-gray-100">
       <Sidebar />
-      <div className="flex-1 flex flex-col bg-gray-100">
+      <div className="flex-1 flex flex-col">
         <Header />
-        <div className="p-4 mx-6 my-10 bg-white rounded shadow mt-4">
-          <h2 className="text-xl font-semibold mb-4">Add Customer</h2>
+        <div className="w-full px-6 pt-4 bg-white shadow-md rounded">
+          <h2 className="text-2xl font-semibold mb-6">New Customer</h2>
 
-          {/* General Backend Error Message */}
+          {topErrors.length > 0 && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+              <ul className="list-disc pl-5">
+                {topErrors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {generalError && <p className="text-red-500 mb-4">{generalError}</p>}
 
-          <form onSubmit={handleSubmit} className="w-full">
-            {/* First Name & Last Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <div>
-                <label className="block font-medium mb-1">
-                  First Name <span className="text-red-500">*</span>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Customer Type */}
+            <div className="w-1/2  flex items-center space-x-4">
+              <label className="w-40">
+                Customer Type <span className="text-red-500">*</span>
+              </label>
+              <div className="flex space-x-8">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="customer_type"
+                    value="Business"
+                    // checked={formData.customer_type === "Business"}
+                    onChange={handleChange}
+                    className="form-radio text-blue-600"
+                  />
+                  <span className="ml-2 text-gray-700">Business</span>
                 </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="Enter first name"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="border border-gray-300 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
-                />
-                {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
-              </div>
-
-              <div>
-                <label className="block font-medium mb-1">
-                  Last Name <span className="text-red-500">*</span>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="customer_type"
+                    value="Individual"
+                    // checked={formData.customer_type === "Individual"}
+                    onChange={handleChange}
+                    className="form-radio text-blue-600"
+                  />
+                  <span className="ml-2 text-gray-700">Individual</span>
                 </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Enter last name"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="border border-gray-300 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
-                />
-                {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
               </div>
             </div>
 
-            {/* Mobile No & Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <div>
-                <label className="block font-medium mb-1">
-                  Mobile No <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="mobileNo"
-                  placeholder="Enter mobile number"
-                  value={formData.mobileNo}
-                  onChange={handleChange}
-                  className="border border-gray-300 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
-                />
-                {errors.mobileNo && <p className="text-red-500 text-sm">{errors.mobileNo}</p>}
-              </div>
+            {/* First Name */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
+                First Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                placeholder="Enter first name"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+              />
+            </div>
 
-              <div>
-                <label className="block font-medium mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="border border-gray-300 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
-                />
-                {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-              </div>
+            {/* Last Name */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
+                Last Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                placeholder="Enter last name"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Mobile Number */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
+                Mobile <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="mobile_number"
+                value={formData.mobile_number}
+                onChange={handleChange}
+                placeholder="Enter 10-digit number"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter email"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+              />
             </div>
 
             {/* Address */}
-            <div className="mb-6">
-              <label className="block font-medium mb-1">
+            <div className="w-1/2 flex items-start space-x-4">
+              <label className="w-40 pt-2">
                 Address <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="address"
-                placeholder="Enter address"
                 value={formData.address}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter address"
+                rows="3"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
             </div>
 
-            <div className="flex justify-between">
-              <button
-                type="button"
-                className="px-6 py-2 bg-gray-300 rounded"
-                onClick={() => navigate("/customers")}
-              >
-                Back
-              </button>
+            {/* Buttons */}
+            <div className="w-1/2 flex  space-x-5">
               <button
                 type="submit"
-                className="px-6 py-2 bg-primary text-white rounded"
-                disabled={Object.keys(errors).length > 0}
+                className="px-5 py-2 rounded bg-activeNavigationMenu text-white hover:bg-green-700"
               >
                 Save
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/customers")}
+                className="px-5 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-300"
+              >
+                Cancel
               </button>
             </div>
           </form>

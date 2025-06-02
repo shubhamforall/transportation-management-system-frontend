@@ -1,15 +1,21 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../utils/axiosInstance"; // Import the custom Axios instance
+import API from "../../utils/axiosInstance"; 
 
 // Fetch Customers
-export const fetchCustomers = createAsyncThunk("customers/fetch", async (_, { rejectWithValue }) => {
-  try {
-    const response = await API.get("/customer");
-    return response.data;
-  } catch (error) {
-    return rejectWithValue(error.response?.data || "Failed to fetch customers");
+export const fetchCustomers = createAsyncThunk(
+  "customers/fetch",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await API.get("/customer");
+      return response.data.data.list; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch customers"
+      );
+    }
   }
-});
+);
+
 
 // Add Customer
 export const addCustomer = createAsyncThunk("customers/add", async (customerData, { rejectWithValue }) => {

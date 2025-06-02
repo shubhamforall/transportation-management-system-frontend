@@ -8,7 +8,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ username: "", password: "" });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,17 +39,18 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
-              Email
+              Username
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
           </div>
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Password
@@ -74,7 +75,10 @@ const Login = () => {
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Don't have an account?{" "}
-          <a href="/register" className="text-activeNavigationMenu hover:underline">
+          <a
+            href="/register"
+            className="text-activeNavigationMenu hover:underline"
+          >
             Sign up here
           </a>
         </p>

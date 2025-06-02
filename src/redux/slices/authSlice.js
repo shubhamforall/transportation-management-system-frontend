@@ -1,16 +1,17 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../utils/axiosInstance"; 
+import API from "../../utils/axiosInstance";
 
 // Async action for user registration
 export const registerUser = createAsyncThunk(
   "auth/registerUser",
   async (userData, { rejectWithValue }) => {
     try {
-      console.log("Registering user with data:", userData); 
-      await API.post("/auth/register", userData);
+      await API.post("/auth/login", userData);
     } catch (error) {
-      console.error("Registration error:", error.response?.data); 
-      return rejectWithValue(error.response?.data?.message || "Registration failed");
+      console.error("Registration error:", error.response?.data);
+      return rejectWithValue(
+        error.response?.data?.message || "Registration failed"
+      );
     }
   }
 );
@@ -21,11 +22,12 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/login", userData);
-      const { token } = response.data;
+      const { token, full_name } = response.data.data;
 
-      localStorage.setItem("token", token); 
+      localStorage.setItem("token", token);
+      localStorage.setItem("full_name", full_name);
 
-      return { token }; 
+      return { token };
     } catch (error) {
       console.error("Login error:", error.response?.data);
       return rejectWithValue(error.response?.data?.message || "Login failed");
@@ -38,15 +40,19 @@ const authSlice = createSlice({
   name: "auth",
   initialState: {
     token: localStorage.getItem("token") || null,
+    fullName: localStorage.getItem("full_name") || null, // added
     loading: false,
     error: null,
   },
   reducers: {
     logout: (state) => {
       localStorage.removeItem("token");
+      localStorage.removeItem("full_name"); // added
       state.token = null;
+      state.fullName = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
       // Register User
@@ -69,8 +75,10 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.token = action.payload.token; 
+        state.token = action.payload.token;
+        state.fullName = action.payload.full_name;
       })
+
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;

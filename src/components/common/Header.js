@@ -2,22 +2,13 @@ import { FaBell, FaUserCircle } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 
 const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const token = useSelector((state) => state.auth.token);
-
-  let user = null;
-
-  if (token) {
-    try {
-      user = jwtDecode(token);
-    } catch (error) {
-      console.error("Error decoding token:", error);
-    }
-  }
+  const fullName = useSelector((state) => state.auth.fullName); 
 
   const handleLogout = () => {
     dispatch(logout());
@@ -39,7 +30,7 @@ const Header = () => {
         {/* User Info */}
         <div className="flex items-center mr-4">
           <FaUserCircle className="text-gray-600 mr-2" size={22} />
-          <span className="font-semibold">{user ? `${user.firstName} ${user.lastName}` : "Guest"}</span>
+          <span className="font-semibold">{fullName || "Guest"}</span>
         </div>
 
         {/* Logout Button - Hidden on Mobile */}
