@@ -110,7 +110,7 @@ const CustomerForm = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Header />
-        <div className="w-full px-6 pt-4 bg-white shadow-md rounded">
+        <div className="w-full h-full px-6 py-4 bg-white shadow-md rounded">
           <h2 className="text-2xl font-semibold mb-6">New Customer</h2>
 
           {topErrors.length > 0 && (

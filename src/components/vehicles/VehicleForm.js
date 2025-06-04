@@ -10,178 +10,212 @@ const VehicleForm = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: "",
-    number: "",
-    type: "",
-    modelYear: "",
-    colour: "",
+    vehicle_name: "",
+    vehicle_number: "",
+    vehicle_type: "",
+    vehicle_model: "",
+    vehicle_color: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState("");
+  const [topErrors, setTopErrors] = useState([]);
 
-  // Validation Function
   const validate = () => {
     let newErrors = {};
-    
-    if (!formData.name.trim()) newErrors.name = "Vehicle name is required";
-    
-    if (!formData.number.trim()) {
-      newErrors.number = "Vehicle number is required";
-    } else if (!formData.number.match(/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/)) {
-      newErrors.number = "Enter a valid vehicle number (e.g., MH12AB1234)";
+    let errorMessages = [];
+
+    if (!formData.vehicle_name.trim()) {
+      newErrors.vehicle_name = "Vehicle name is required";
+      errorMessages.push("Please enter the vehicle name.");
     }
 
-    if (!formData.type.trim()) newErrors.type = "Vehicle type is required";
+    if (!formData.vehicle_number.trim()) {
+      newErrors.vehicle_number = "Vehicle number is required";
+      errorMessages.push("Please enter the vehicle number.");
+    } else if (
+      !formData.vehicle_number.match(/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/)
+    ) {
+      newErrors.vehicle_number =
+        "Enter a valid vehicle number (e.g., MH12AB1234)";
+      errorMessages.push(
+        "Vehicle number must be in format like MH12AB1234."
+      );
+    }
+
+    if (!formData.vehicle_type.trim()) {
+      newErrors.vehicle_type = "Vehicle type is required";
+      errorMessages.push("Please enter the vehicle type.");
+    }
 
     const currentYear = new Date().getFullYear();
-    if (!formData.modelYear) {
-      newErrors.modelYear = "Model year is required";
-    } else if (formData.modelYear < 1900 || formData.modelYear > currentYear) {
-      newErrors.modelYear = `Model year must be between 1900 and ${currentYear}`;
+    const modelYear = parseInt(formData.vehicle_model);
+    if (!formData.vehicle_model) {
+      newErrors.vehicle_model = "Model year is required";
+      errorMessages.push("Please enter the model year.");
+    } else if (isNaN(modelYear) || modelYear < 1900 || modelYear > currentYear) {
+      newErrors.vehicle_model = `Model year must be between 1900 and ${currentYear}`;
+      errorMessages.push(`Model year must be between 1900 and ${currentYear}.`);
     }
 
-    if (!formData.colour.trim()) newErrors.colour = "Colour is required";
-    
+    if (!formData.vehicle_color.trim()) {
+      newErrors.vehicle_color = "Colour is required";
+      errorMessages.push("Please enter the colour.");
+    }
+
     setErrors(newErrors);
+    setTopErrors(errorMessages);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle Input Changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear the error when the user updates a field
-    setErrors((prevErrors) => {
-      const newErrors = { ...prevErrors };
-      delete newErrors[name]; 
-      return newErrors;
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[name];
+      return updated;
     });
+    setGeneralError("");
+    setTopErrors([]);
   };
 
-  // Handle Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      try {
-        await dispatch(addVehicle(formData)).unwrap();
-        navigate("/vehicles"); // Navigate only if successful
-      } catch (error) {
-        console.error("Error adding vehicle:", error);
+    if (!validate()) return;
 
-        let newErrors = {};
-        if (error.error && error.error.errors && Array.isArray(error.error.errors)) {
-          error.error.errors.forEach((err) => {
-            if (err.path) {
-              newErrors[err.path] = err.message.replace(/^./, (char) => char.toUpperCase());
-            }
-          });
-        } else if (error.message) {
-          newErrors.form = error.message; 
-        } else {
-          newErrors.form = "Something went wrong. Please try again!";
-        }
-        setErrors(newErrors);
+    try {
+      await dispatch(addVehicle(formData)).unwrap();
+      navigate("/vehicles");
+    } catch (error) {
+      let newErrors = {};
+      if (error.error?.errors?.length) {
+        const collectedMessages = [];
+        error.error.errors.forEach((err) => {
+          if (err.path) {
+            newErrors[err.path] = err.message;
+            collectedMessages.push(err.message);
+          }
+        });
+        setTopErrors(collectedMessages);
+      } else if (error.message) {
+        setGeneralError(error.message);
       }
+      setErrors(newErrors);
     }
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         <Header />
-        <div className="p-4 mx-6 my-10 bg-white rounded shadow mt-4">
-          <h2 className="text-2xl font-bold mb-4">Add Vehicle</h2>
-          
-          {errors.form && <p className="text-red-500 text-sm mb-4">{errors.form}</p>}
+        <div className="w-full h-full px-6 py-4 bg-white shadow-md rounded">
+          <h2 className="text-2xl font-semibold mb-6">Add Vehicle</h2>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700">
+          {topErrors.length > 0 && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+              <ul className="list-disc pl-5">
+                {topErrors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {generalError && <p className="text-red-500 mb-4">{generalError}</p>}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Vehicle Name */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
                 Vehicle Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="name"
-                placeholder="Enter vehicle name"
-                value={formData.name}
+                name="vehicle_name"
+                value={formData.vehicle_name}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-2 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter vehicle name"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
             </div>
 
-            <div>
-              <label className="block text-gray-700">
+            {/* Vehicle Number */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
                 Vehicle Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="number"
-                placeholder="Enter vehicle number"
-                value={formData.number}
+                name="vehicle_number"
+                value={formData.vehicle_number}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-2 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter vehicle number"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.number && <p className="text-red-500 text-sm">{errors.number}</p>}
             </div>
 
-            <div>
-              <label className="block text-gray-700">
+            {/* Vehicle Type */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
                 Type <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="type"
-                placeholder="Enter type (SUV, Sedan, etc.)"
-                value={formData.type}
+                name="vehicle_type"
+                value={formData.vehicle_type}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-2 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter type (SUV, Sedan, etc.)"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
             </div>
 
-            <div>
-              <label className="block text-gray-700">
+            {/* Model Year */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
                 Model Year <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                name="modelYear"
-                placeholder="Enter model year"
-                value={formData.modelYear}
+                name="vehicle_model"
+                value={formData.vehicle_model}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-2 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter model year"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.modelYear && <p className="text-red-500 text-sm">{errors.modelYear}</p>}
             </div>
 
-            <div>
-              <label className="block text-gray-700">
+            {/* Colour */}
+            <div className="w-1/2 flex items-center space-x-4">
+              <label className="w-40">
                 Colour <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="colour"
-                placeholder="Enter colour"
-                value={formData.colour}
+                name="vehicle_color"
+                value={formData.vehicle_color}
                 onChange={handleChange}
-                className="border border-gray-300 focus:border-2 focus:border-blue-500 focus:outline-none text-sm px-3 py-2 rounded w-full"
+                placeholder="Enter colour"
+                className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
               />
-              {errors.colour && <p className="text-red-500 text-sm">{errors.colour}</p>}
             </div>
 
-            <div className="col-span-2 flex justify-between">
-              <button type="button" className="px-4 py-2 bg-gray-300 rounded" onClick={() => navigate("/vehicles")}>
-                Back
-              </button>
-              <button 
-                type="submit" 
-                className="px-4 py-2 bg-primary text-white rounded"
-                disabled={Object.keys(errors).length > 0}
+            {/* Buttons */}
+            <div className="w-1/2 flex space-x-5">
+              <button
+                type="submit"
+                className="px-5 py-2 rounded bg-activeNavigationMenu text-white hover:bg-green-700"
               >
                 Save
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/vehicles")}
+                className="px-5 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-300"
+              >
+                Cancel
               </button>
             </div>
           </form>

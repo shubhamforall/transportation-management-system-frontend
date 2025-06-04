@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
+import HomePage from "../pages/Home";
 import CustomerList from "../components/customers/CustomerList";
 import CustomerForm from "../components/customers/CustomerForm";
 import VehicleList from "../components/vehicles/VehicleList";
@@ -17,6 +18,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/customers" element={<CustomerList />} />
         <Route path="/customers/add" element={<CustomerForm />} />
         <Route path="/vehicles" element={<VehicleList />} />
